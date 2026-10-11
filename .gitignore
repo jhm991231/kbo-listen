@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+
+# 합성 음성 데이터셋은 저장소가 아닌 별도 저장소(Drive·HF)에 둔다
+data/
+*.zip

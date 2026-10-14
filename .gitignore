@@ -8,3 +8,6 @@ data/
 
 # Drive for desktop 동기화 임시 폴더 (kbolisten/, notebooks/를 Drive와 동기화함)
 .tmp.drive*/
+
+# 의역 사람 점검 표본·정답 키 (07 셀 11이 만듦)
+notebooks/audit/

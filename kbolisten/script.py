@@ -110,7 +110,8 @@ KNOBS = {
     "p_speed": 0.5,     # 구종을 말할 때 구속도 붙일 확률
     "p_omit": 0.0,      # 판정 생략 (K1). 같은 타석에서 나중에 카운트 재언급이 있는 투구만 대상
     "p_back": 0.1,      # 이벤트 뒤 해설위원 맞장구
-    "p_comment": 0.15,  # 이벤트 뒤 해설위원 코멘트
+    "p_comment": 0.15,  # 일반 투구 뒤 해설위원 코멘트
+    "p_comment_pa": 0.6,  # 타석 종료(안타·아웃·삼진·볼넷 등) 뒤 코멘트. 실제 중계에서는 거의 항상 한마디 함
     "p_distract": 0.0,  # 코멘트 중 방해 코멘트 비율 (판정 단어가 있지만 지금 상태에 대한 말이 아님)
 }
 
@@ -118,15 +119,29 @@ KNOBS = {
 # 해설위원은 상태(B-S-O)를 바꾸는 정보를 전달하지 않는다 → event_idx 없음, 질의와 무관
 BACKCHANNEL = ["네.", "그렇죠.", "예, 맞습니다.", "네, 그렇습니다."]
 
-# 일반 코멘트: 방금 일어난 일과 어긋나지 않게, 판정 단어(볼·스트라이크·파울·아웃 등)는 쓰지 않는다
+# 일반 코멘트: 방금 일어난 일과 어긋나지 않게, 판정·결과 단어(볼·스트라이크·파울·아웃·삼진·볼넷·안타·
+# 홈런·병살·실책 등)는 쓰지 않는다. 캐스터의 판정 발화를 키워드로 잡는 쪽이 헷갈리지 않도록
 COMMENT = {
     "ball": ["유인구에 잘 참았습니다.", "선구안이 좋네요.", "제구가 조금 흔들리는 모습이에요."],
     "strike": ["좋은 코스로 들어왔어요.", "타자가 예상하지 못한 공이었네요.", "투수가 적극적으로 승부하고 있습니다."],
     "foul": ["타이밍은 맞고 있어요.", "끈질기게 버티네요.", "조금만 앞에서 맞았으면 좋았을 텐데요."],
-    "hit": ["노림수가 정확했어요.", "공략을 잘했습니다.", "좋은 타격이었습니다."],
-    "out": ["투수가 잘 막아냈어요.", "수비가 깔끔했습니다.", "타구가 정면으로 갔네요."],
-    "strikeout": ["결정구가 좋았습니다.", "마지막 공이 정말 좋았어요."],
-    "walk": ["투수 입장에서는 아쉬운 장면이죠.", "출루에 성공했습니다."],
+    # 타석 종료: 결과 종류별로 나눔 (데이터에 땅볼·뜬공 구분은 없음)
+    "hit": ["노림수가 정확했어요.", "공략을 잘했습니다.", "좋은 타격이었습니다.",
+            "가볍게 밀어 쳤네요.", "코스가 정말 좋았어요.", "끝까지 공을 잘 보고 쳤습니다."],
+    "extra": ["외야 사이를 정확히 갈랐어요.", "제대로 맞은 타구였습니다.", "타구 속도가 정말 빨랐어요.",
+              "주루 플레이도 적극적이었습니다."],
+    "home_run": ["맞는 순간 알 수 있었죠.", "실투를 놓치지 않았습니다.", "비거리가 충분했어요.",
+                 "투수 입장에서는 가장 아쉬운 한 방이네요."],
+    "out": ["투수가 잘 막아냈어요.", "수비가 깔끔했습니다.", "타구가 정면으로 갔네요.",
+            "타이밍이 조금 늦었어요.", "투수가 원하는 대로 유도했습니다.", "잘 맞긴 했는데 아쉽네요."],
+    "double_play": ["투수가 가장 원했던 장면이죠.", "내야진의 호흡이 좋았습니다.",
+                    "타자 입장에서는 제일 아쉬운 결과예요."],
+    "sac": ["작전이 잘 수행됐습니다.", "자기 역할을 다했어요.", "벤치의 의도대로 됐네요."],
+    "error": ["수비에서 아쉬운 장면이 나왔네요.", "쉽지 않은 타구였어요.", "투수 입장에서는 힘이 빠지는 장면이죠."],
+    "strikeout": ["결정구가 좋았습니다.", "마지막 공이 정말 좋았어요.", "투수가 완전히 이긴 승부였어요.",
+                  "타자가 대처하기 어려운 공이었습니다."],
+    "walk": ["투수 입장에서는 아쉬운 장면이죠.", "출루에 성공했습니다.", "투수가 승부를 어렵게 가져갔어요.",
+             "타자가 끝까지 침착했습니다."],
     "clock": ["요즘은 이런 장면도 종종 나오죠.", "템포를 조금 더 신경 써야겠네요."],
     "general": ["오늘 컨디션이 좋아 보입니다.", "양 팀 모두 집중력이 좋네요.", "중요한 순간입니다."],
 }
@@ -154,26 +169,32 @@ def outcome(e):
         return "strikeout"
     if end in ("walk", "catcher_interference") or e.get("result") == "HBP":
         return "walk"
-    if end in ("single", "double", "triple", "home_run", "field_error"):
-        return "hit"
     if end is not None:
-        return "out"
+        return {"single": "hit", "double": "extra", "triple": "extra", "home_run": "home_run",
+                "field_error": "error", "double_play": "double_play", "triple_play": "double_play",
+                "sac_fly": "sac", "sac_bunt": "sac"}.get(end, "out")
     if e["type"] in ("auto_ball", "auto_strike"):
         return "clock"
     return {"B": "ball", "F": "foul", "H": None}.get(e["result"], "strike")
 
 
 def analyst_line(e, ball_seen, rng, k):
-    """이벤트 뒤 해설위원 발화 하나 (없으면 None)"""
+    """이벤트 뒤 해설위원 발화 하나 (없으면 None)
+
+    타석 종료 뒤에는 코멘트 확률이 높고(p_comment_pa), 결과에 맞는 코멘트를 주로 한다.
+    """
+    pa_end = "pa_end" in e
+    p_comment = k["p_comment_pa"] if pa_end else k["p_comment"]
+    p_specific = 0.9 if pa_end else 0.7  # 나머지는 일반 코멘트
     r = rng.random()
-    if r < k["p_comment"]:
+    if r < p_comment:
         if rng.random() < k["p_distract"]:
             pool = DISTRACT + (RECALL_BALL if ball_seen else [])
             return {"kind": "distract", "text": rng.choice(pool)}
         kind = outcome(e)
-        pool = COMMENT[kind] if kind and rng.random() < 0.7 else COMMENT["general"]
+        pool = COMMENT[kind] if kind and rng.random() < p_specific else COMMENT["general"]
         return {"kind": "comment", "text": rng.choice(pool)}
-    if r < k["p_comment"] + k["p_back"]:
+    if r < p_comment + k["p_back"]:
         return {"kind": "backchannel", "text": rng.choice(BACKCHANNEL)}
     return None
 

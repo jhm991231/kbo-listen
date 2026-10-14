@@ -5,3 +5,6 @@ __pycache__/
 # 합성 음성 데이터셋은 저장소가 아닌 별도 저장소(Drive·HF)에 둔다
 data/
 *.zip
+
+# Drive for desktop 동기화 임시 폴더 (kbolisten/, notebooks/를 Drive와 동기화함)
+.tmp.drive*/

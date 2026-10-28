@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KBO-Listen — 야구 중계 볼카운트 음성인식 챌린지</title>
+<meta name="description" content="야구 중계 음성을 듣고 질의 시각마다 볼-스트라이크-아웃을 맞히는 음성인식 챌린지. 데이터셋, 평가 코드, 베이스라인, 리더보드.">
+<style>
+:root {
+  --ground: #ffffff;
+  --ink: #16191d;
+  --ink-2: #4a5059;
+  --ink-3: #6b717b;
+  --rule: #e3e6ea;
+  --rule-strong: #c9ced5;
+  --panel: #f5f7f9;
+  --blue: #1f5fbf;
+  --blue-ink: #174a96;
+  --blue-wash: #eaf1fb;
+  --mark: #fff4c2;
+  --measure: 100%; /* 본문도 표와 같은 폭(콘텐츠 열 820px)까지: 한글 기준 한 줄 50자 안팎 */
+  --sans: system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", Consolas, "D2Coding", monospace;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 72px; }
+body {
+  margin: 0; background: var(--ground); color: var(--ink);
+  font: 16px/1.7 var(--sans); word-break: keep-all; overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+::selection { background: var(--blue-wash); color: var(--ink); }
+a { color: var(--blue); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { color: var(--blue-ink); text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 3px; }
+html { scrollbar-color: var(--rule-strong) var(--ground); }
+
+/* header */
+.top { position: sticky; top: 0; z-index: 5; background: rgba(255,255,255,.96); border-bottom: 1px solid var(--rule); }
+.top .in { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 28px; }
+.brand { font-weight: 700; color: var(--ink); text-decoration: none; letter-spacing: -.01em; white-space: nowrap; }
+.top nav { display: flex; gap: 20px; overflow-x: auto; font-size: 14px; margin-left: auto; scrollbar-width: none; }
+.top nav a { color: var(--ink-2); text-decoration: none; white-space: nowrap; padding: 4px 0; }
+.top nav a:hover { color: var(--ink); }
+
+/* first view */
+.intro { max-width: 1200px; margin: 0 auto; padding: 56px 24px 48px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 56px; align-items: start; }
+h1 { font-size: clamp(30px, 3.4vw, 42px); line-height: 1.22; letter-spacing: -.025em; margin: 0 0 18px; text-wrap: balance; }
+.lede { font-size: 18px; color: var(--ink-2); margin: 0 0 26px; max-width: 34em; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 26px; }
+.btn { display: inline-flex; align-items: center; height: 42px; padding: 0 18px; border-radius: 7px; font-size: 15px; font-weight: 600; text-decoration: none; border: 1px solid transparent; }
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover { background: var(--blue-ink); color: #fff; }
+.btn-secondary { background: var(--ground); color: var(--ink); border-color: var(--rule-strong); }
+.btn-secondary:hover { color: var(--ink); border-color: var(--ink-3); }
+.facts { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0; padding: 0; list-style: none; font-size: 14px; color: var(--ink-2); }
+.facts b { color: var(--ink); font-weight: 650; }
+
+.example { margin: 0; border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+.example-head { display: flex; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--rule); font-size: 13px; color: var(--ink-3); background: var(--panel); }
+.example-head strong { color: var(--ink); font-weight: 600; }
+.example table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+.example td { padding: 9px 16px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.example tr:last-child td { border-bottom: 0; }
+.example .t { color: var(--ink-3); width: 58px; white-space: nowrap; font-size: 13px; padding-top: 11px; }
+.example .who { color: var(--ink-3); width: 54px; white-space: nowrap; font-size: 13px; padding-top: 11px; }
+.example tr.q td { background: var(--blue-wash); border-bottom-color: #d6e3f6; }
+.example tr.q .ans { font-weight: 650; color: var(--blue-ink); }
+.example tr.q .t, .example tr.q .who { color: var(--ink-2); }
+.example .note { font-size: 12.5px; color: var(--ink-3); padding: 10px 16px; border-top: 1px solid var(--rule); }
+
+/* document */
+.doc { max-width: 1200px; margin: 0 auto; padding: 8px 24px 96px; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 56px; border-top: 1px solid var(--rule); }
+.toc { position: sticky; top: 80px; align-self: start; padding-top: 40px; font-size: 14px; }
+.toc p { margin: 0 0 8px; font-weight: 600; color: var(--ink); }
+.toc ol { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--rule); }
+.toc a { display: block; padding: 4px 0 4px 14px; color: var(--ink-2); text-decoration: none; margin-left: -1px; border-left: 1px solid transparent; }
+.toc a:hover { color: var(--ink); border-left-color: var(--ink-3); }
+.content { min-width: 0; max-width: 820px; }
+section { padding-top: 40px; }
+h2 { font-size: 26px; line-height: 1.3; letter-spacing: -.015em; margin: 24px 0 14px; }
+h3 { font-size: 18px; line-height: 1.4; margin: 32px 0 10px; }
+p, ul, ol { max-width: var(--measure); }
+p { margin: 0 0 14px; }
+ul, ol { padding-left: 22px; margin: 0 0 14px; }
+li { margin: 5px 0; }
+.muted { color: var(--ink-3); font-size: 14px; }
+.key { background: var(--panel); border-radius: 8px; padding: 14px 18px; margin: 18px 0; max-width: var(--measure); }
+.key p { margin: 0; }
+
+dl.def { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px 20px; margin: 0 0 14px; max-width: var(--measure); }
+dl.def dt { font-weight: 600; }
+dl.def dd { margin: 0; color: var(--ink-2); }
+
+.hard-list { list-style: none; padding: 0; }
+.hard-list li { padding: 14px 0; border-top: 1px solid var(--rule); margin: 0; }
+.hard-list li:last-child { border-bottom: 1px solid var(--rule); }
+.hard-list strong { display: block; margin-bottom: 2px; }
+.hard-list span { color: var(--ink-2); }
+q { quotes: "“" "”"; color: var(--ink); }
+
+.table-wrap { overflow-x: auto; margin: 14px 0 10px; }
+table.data { border-collapse: collapse; width: 100%; min-width: 600px; font-size: 15px; overflow-wrap: normal; }
+table.data th, table.data td { padding: 10px 14px 10px 0; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
+table.data th { font-size: 13px; font-weight: 600; color: var(--ink-3); border-bottom-color: var(--rule-strong); white-space: nowrap; }
+table.data td.n, table.data th.n { text-align: right; padding-left: 14px; padding-right: 28px; white-space: nowrap; }
+table.data tr > :last-child { padding-right: 0; }
+table.data.wide { min-width: 820px; }
+table.data.narrow { min-width: 520px; }
+table.data.sticky tr > :first-child { position: sticky; left: 0; background: var(--ground); z-index: 1; }
+.table-wrap.more { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent); }
+.nw { white-space: nowrap; }
+dl.legend { font-size: 14px; grid-template-columns: 100px minmax(0, 1fr); gap: 4px 16px; margin-top: 12px; }
+table.data tr:last-child td { border-bottom-color: var(--rule-strong); }
+table.data .best { font-weight: 700; }
+table.data .sub { display: block; font-size: 13px; color: var(--ink-3); }
+.tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 4px; background: var(--panel); color: var(--ink-2); white-space: nowrap; }
+
+pre { background: var(--panel); border-radius: 8px; padding: 14px 16px; overflow-x: auto; font: 13.5px/1.6 var(--mono); margin: 12px 0 16px; }
+code { font-family: var(--mono); font-size: .9em; background: var(--panel); padding: 1px 5px; border-radius: 4px; }
+pre code { background: none; padding: 0; font-size: inherit; }
+
+.pipeline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 18px; padding: 0; list-style: none; font-size: 14.5px; }
+.pipeline li { margin: 0; padding: 7px 12px; border: 1px solid var(--rule-strong); border-radius: 6px; background: var(--ground); }
+.pipeline { gap: 0; row-gap: 8px; }
+.pipeline li + li { margin-left: 30px; position: relative; }
+.pipeline li + li::before { content: ""; position: absolute; left: -24px; top: 50%; width: 18px; height: 10px; margin-top: -5px;
+  background: var(--ink-3);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 10'%3E%3Cpath d='M0 5h15M11 1l4 4-4 4' fill='none' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center / contain;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 10'%3E%3Cpath d='M0 5h15M11 1l4 4-4 4' fill='none' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat center / contain; }
+
+.rules { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 40px; max-width: 820px; }
+.rules h3 { margin-top: 8px; }
+.rules ul { padding-left: 20px; }
+
+ol.steps { counter-reset: s; list-style: none; padding: 0; }
+ol.steps li { counter-increment: s; display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 4px 12px; margin: 0 0 14px; }
+ol.steps li::before { content: counter(s); width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--rule-strong); display: grid; place-items: center; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+
+footer { border-top: 1px solid var(--rule); }
+footer .in { max-width: 1200px; margin: 0 auto; padding: 28px 24px 48px; font-size: 13.5px; color: var(--ink-3); display: grid; gap: 6px; }
+
+@media (max-width: 960px) {
+  .intro { grid-template-columns: 1fr; gap: 36px; padding-top: 40px; }
+  .doc { grid-template-columns: 1fr; gap: 0; }
+  .toc { display: none; }
+}
+@media (max-width: 640px) {
+  .top nav { display: none; }
+  .rules { grid-template-columns: 1fr; gap: 0; }
+  dl.def { grid-template-columns: 1fr; gap: 2px; }
+  dl.def dd { margin-bottom: 10px; }
+  .example .who { display: none; }
+  .example-head { flex-direction: column; gap: 2px; }
+  table.data { font-size: 14px; }
+  h2 { font-size: 23px; }
+  .intro h1 br { display: none; }
+  table.data.sticky tr > :first-child { width: 132px; min-width: 132px; max-width: 132px; white-space: normal; padding-right: 10px; }
+  table.data.wide { min-width: 640px; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="in">
+    <a class="brand" href="#">KBO-Listen</a>
+    <nav aria-label="섹션">
+      <a href="#task">과제</a><a href="#data">데이터셋</a><a href="#eval">평가</a>
+      <a href="#leaderboard">리더보드</a><a href="#baseline">베이스라인</a><a href="#rules">규칙</a><a href="#submit">참가 방법</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="intro">
+  <div>
+    <h1>야구 중계를 듣고, <br><span class="nw">그 순간의</span> 볼카운트를 맞히는 <br>음성인식 챌린지</h1>
+    <p class="lede">반 이닝 분량의 중계 음성과 질의 시각이 주어집니다. 각 시각의 볼·스트라이크·아웃을 답하세요.
+      캐스터는 판정을 매번 말하지 않고, 해설위원은 판정 단어로 헷갈리게 합니다. 받아쓰기만으로는 풀리지 않습니다.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="https://huggingface.co/datasets/jhm991231/kbo-listen">데이터셋 받기</a>
+      <a class="btn btn-secondary" href="https://github.com/jhm991231/kbo-listen">GitHub: 평가 코드와 베이스라인</a>
+    </div>
+    <ul class="facts">
+      <li><b>1,300</b> 반 이닝 클립</li>
+      <li><b>35</b>시간 합성 중계</li>
+      <li><b>20,846</b> 질의</li>
+      <li>test exact 최고 <b>73.7%</b></li>
+    </ul>
+  </div>
+
+  <figure class="example" aria-label="중계 예시와 질의">
+    <div class="example-head"><strong>중계 한 장면</strong><span>질의 시각마다 볼·스트라이크·아웃</span></div>
+    <table>
+      <tr><td class="t">8.5초</td><td class="who">캐스터</td><td>원아웃, 타석에는 김도영.</td></tr>
+      <tr><td class="t">11.9초</td><td class="who">캐스터</td><td>초구, 바깥으로 살짝 벗어납니다.</td></tr>
+      <tr class="q"><td class="t">14.4초</td><td class="who">질의</td><td class="ans">1볼 0스트라이크 1아웃</td></tr>
+      <tr><td class="t">14.6초</td><td class="who">해설</td><td>유인구를 잘 참아냈어요.</td></tr>
+      <tr><td class="t">18.0초</td><td class="who">캐스터</td><td>배트가 허공을 가릅니다.</td></tr>
+      <tr class="q"><td class="t">20.1초</td><td class="who">질의</td><td class="ans">1볼 1스트라이크 1아웃</td></tr>
+      <tr><td class="t">20.3초</td><td class="who">해설</td><td>풀카운트까지 가면 투수도 부담이 크죠.</td></tr>
+      <tr><td class="t">24.2초</td><td class="who">캐스터</td><td>뒤로 걷어냅니다.</td></tr>
+      <tr class="q"><td class="t">26.0초</td><td class="who">질의</td><td class="ans">1볼 2스트라이크 1아웃</td></tr>
+    </table>
+    <figcaption class="note">설명을 위해 꾸민 장면입니다. 실제 클립은 KBO 경기 기록을 바탕으로 합성했습니다.</figcaption>
+  </figure>
+</div>
+
+<div class="doc">
+  <aside class="toc" aria-label="목차">
+    <p>목차</p>
+    <ol>
+      <li><a href="#task">과제</a></li>
+      <li><a href="#why">왜 어려운가</a></li>
+      <li><a href="#data">데이터셋</a></li>
+      <li><a href="#eval">평가</a></li>
+      <li><a href="#leaderboard">리더보드</a></li>
+      <li><a href="#baseline">베이스라인</a></li>
+      <li><a href="#rules">규칙</a></li>
+      <li><a href="#submit">참가 방법</a></li>
+      <li><a href="#limits">한계와 출처</a></li>
+    </ol>
+  </aside>
+
+  <div class="content">
+
+  <section id="task">
+    <h2>과제</h2>
+    <dl class="def">
+      <dt>입력</dt><dd>반 이닝 분량의 중계 음성(평균 약 97초)과 질의 시각 목록</dd>
+      <dt>출력</dt><dd>질의 시각 <code>t</code>마다 B(볼 0–3), S(스트라이크 0–2), O(아웃 0–3)</dd>
+      <dt>질의 위치</dt><dd>판정이 전해진 직후, 다음 말이 시작되기 전. 판정이 생략돼 아직 알 수 없는 구간에는 질의를 두지 않습니다.</dd>
+    </dl>
+  </section>
+
+  <section id="why">
+    <h2>왜 어려운가</h2>
+    <ul class="hard-list">
+      <li><strong>판정을 매번 말하지 않습니다</strong><span>실제 중계처럼 캐스터가 판정을 건너뛰고, 가끔 <q>카운트 투앤원</q>처럼 정리해 줍니다. 그 사이는 추론하거나 다음 언급을 기다려야 합니다.</span></li>
+      <li><strong>판정 단어 없이 묘사합니다</strong><span><q>바깥으로 흘러 나갑니다</q>는 볼, <q>배트가 허공을 가릅니다</q>는 헛스윙, <q>뒤로 걷어냅니다</q>는 파울입니다. 키워드를 찾는 방식으로는 놓칩니다.</span></li>
+      <li><strong>해설이 헷갈리게 합니다</strong><span><q>풀카운트까지 가면 투수도 부담이 크죠</q>에는 판정 단어가 들리지만, 지금 카운트 얘기가 아닙니다.</span></li>
+    </ul>
+    <div class="key"><p>베이스라인에서 받아쓰기 오류율(CER)을 12.5%에서 3.8%로 줄여도 Hard 트랙 점수는 3.4점만 오릅니다. 이 챌린지의 병목은 듣기가 아니라 이해입니다.</p></div>
+  </section>
+
+  <section id="data">
+    <h2>데이터셋</h2>
+    <div class="table-wrap"><table class="data narrow">
+      <tr><th>split</th><th>시즌</th><th class="n">클립 (Easy / Hard)</th><th class="n">질의</th><th>공개 파일</th></tr>
+      <tr><td>train</td><td>2023 · 2024 · 2025 절반</td><td class="n">1,000 (500 / 500)</td><td class="n">16,159</td><td>음성, 질의, 정답, 대본, 메타</td></tr>
+      <tr><td>dev</td><td>2025 나머지 절반</td><td class="n">100 (50 / 50)</td><td class="n">1,534</td><td>음성, 질의, 정답, 메타</td></tr>
+      <tr><td>test</td><td>2026</td><td class="n">200 (100 / 100)</td><td class="n">3,153</td><td>음성, 질의, 메타 <span class="sub">정답 비공개</span></td></tr>
+    </table></div>
+    <p class="muted">경기 단위로 split을 나눠 같은 경기가 두 split에 걸치지 않습니다. 음성은 24kHz mono WAV입니다.</p>
+
+    <h3>트랙</h3>
+    <div class="table-wrap"><table class="data">
+      <tr><th></th><th>Easy</th><th>Hard</th></tr>
+      <tr><td>판정 생략</td><td>없음</td><td>생략 가능한 투구의 50% <span class="sub">같은 타석에서 뒤에 카운트 언급이 있는 투구만</span></td></tr>
+      <tr><td>해설위원</td><td>맞장구, 결과에 맞는 코멘트</td><td>더 자주, 그리고 판정 단어가 들어간 일반론</td></tr>
+      <tr><td>대본</td><td>템플릿</td><td>LLM 의역 <span class="sub">판정 단어 없는 묘사가 많음</span></td></tr>
+      <tr><td>드문 이벤트</td><td>없음</td><td>절반의 클립 <span class="sub">피치클락 위반, 투구 없는 볼넷, 주루사</span></td></tr>
+    </table></div>
+
+    <h3>만든 방법</h3>
+    <p>실제 중계 음성은 저작권 때문에 배포할 수 없어서, 실제 경기 기록을 바탕으로 중계를 합성했습니다.</p>
+    <ol>
+      <li><strong>정답</strong>: KBO 투구 단위 기록(<a href="https://huggingface.co/datasets/slothman3878/kbo_playbyplay">slothman3878/kbo_playbyplay</a>, CC BY 4.0)으로 투구마다 B-S-O를 계산</li>
+      <li><strong>대본</strong>: 실제 중계 말투를 참고한 템플릿으로 캐스터·해설위원 대본 생성</li>
+      <li><strong>의역 (Hard)</strong>: Qwen3-32B가 다시 쓰고, Gemma 3 27B가 원문을 모른 채 판정을 분류해 원래 판정과 같을 때만 채택</li>
+      <li><strong>음성</strong>: Qwen3-TTS로 설계한 가상의 캐스터 3명, 해설위원 2명 목소리로 합성. 실존 인물의 목소리는 쓰지 않았습니다.</li>
+    </ol>
+    <p>의역 품질은 사람이 직접 확인했습니다. 원문과 정답을 모른 채 의역 100문장을 판정했을 때 판정 문장의 <strong>97.3%</strong>(73/75)가 원래 판정과 일치했고, 13%는 표현이 어색했습니다.</p>
+
+    <h3>파일 형식</h3>
+<pre><code>{split}/
+  audio/{clip_id}.wav     24kHz mono
+  queries.json            {"clip_id": [t1, t2, ...]}
+  gt.json                 {"clip_id": [{"t": 13.59, "b": 0, "s": 1, "o": 0}, ...]}   test 제외
+  scripts.jsonl           발화별 텍스트·화자·시작/끝 시각   train만
+  meta.jsonl              트랙, 태그, 시즌, 목소리</code></pre>
+  </section>
+
+  <section id="eval">
+    <h2>평가</h2>
+    <p>주 지표는 <strong>exact</strong>입니다. 질의에서 B, S, O 세 값이 모두 맞은 비율이며, 답이 없는 질의는 오답으로 셉니다. B, S, O 각각의 정확도와 트랙별 점수를 함께 봅니다.</p>
+<pre><code>python -m kbolisten.evaluate --gt dev/gt.json --pred pred.json --meta dev/meta.jsonl</code></pre>
+    <p>예측 파일은 정답 파일과 같은 형식입니다: <code>{"clip_id": [{"t": 13.59, "b": 0, "s": 1, "o": 0}, ...]}</code></p>
+  </section>
+
+  <section id="leaderboard">
+    <h2>리더보드</h2>
+    <p class="muted">test 200클립, 질의 3,153개 기준 · 마지막 갱신 <span class="nw">2026-10-29</span></p>
+    <div class="table-wrap"><table class="data wide sticky">
+      <tr><th>방법</th><th class="n">exact</th><th class="n">Easy</th><th class="n">Hard</th><th class="n">B</th><th class="n">S</th><th class="n">O</th><th class="n">날짜</th></tr>
+      <tr><td>Qwen3-ASR + 키워드 규칙<span class="sub">베이스라인</span></td><td class="n best">73.7</td><td class="n">83.4</td><td class="n">64.8</td><td class="n">84.6</td><td class="n">87.5</td><td class="n">92.6</td><td class="n">2026-10-29</td></tr>
+      <tr><td>Whisper large-v3 + 키워드 규칙<span class="sub">베이스라인</span></td><td class="n">70.0</td><td class="n">79.7</td><td class="n">61.0</td><td class="n">82.7</td><td class="n">86.6</td><td class="n">89.4</td><td class="n">2026-10-29</td></tr>
+    </table></div>
+    <dl class="def legend">
+      <dt>exact</dt><dd>질의에서 B, S, O 세 값이 모두 맞은 비율. 순위는 이 값으로 매깁니다.</dd>
+      <dt>Easy · Hard</dt><dd>트랙별 exact. Hard는 판정 생략, 방해 해설, 의역이 들어간 클립입니다.</dd>
+      <dt>B · S · O</dt><dd>볼, 스트라이크, 아웃 각각의 정확도</dd>
+    </dl>
+    <p class="muted">아직 참가자 제출이 없습니다. 제출하면 채점해서 이 표에 추가합니다.</p>
+  </section>
+
+  <section id="baseline">
+    <h2>베이스라인</h2>
+    <ol class="pipeline" aria-label="베이스라인 처리 순서">
+      <li>음성</li><li>ASR (단어별 시각)</li><li>키워드 규칙</li><li>상태머신</li><li>질의 시각별 B-S-O</li>
+    </ol>
+    <div class="table-wrap"><table class="data sticky">
+      <tr><th>ASR</th><th class="n">CER</th><th class="n">exact</th><th class="n">Easy</th><th class="n">Hard</th></tr>
+      <tr><td>Whisper large-v3</td><td class="n">12.5%</td><td class="n">71.3</td><td class="n">81.4</td><td class="n">61.7</td></tr>
+      <tr><td>Qwen3-ASR-1.7B + ForcedAligner</td><td class="n">3.8%</td><td class="n best">75.0</td><td class="n">85.3</td><td class="n">65.1</td></tr>
+    </table></div>
+    <p class="muted">dev + test 300클립, 질의 4,687개 기준이라 test만 쓰는 리더보드 숫자와 다릅니다. 코드: <a href="https://github.com/jhm991231/kbo-listen/blob/main/notebooks/08_baseline_rules.ipynb">08_baseline_rules.ipynb</a></p>
+    <ul>
+      <li>키워드 규칙은 일부러 단순하게 만들었습니다. <q>카운트 투앤원</q>, <q>원아웃, 타석에는</q> 같은 언급이 나오면 상태를 바로잡습니다.</li>
+      <li>Hard에서 틀리는 대부분은 판정 단어가 없는 묘사(<q>뒤쪽으로 걷어냅니다</q>)와 판정 생략입니다.</li>
+      <li>Qwen3-ASR은 합성에 쓴 Qwen3-TTS와 같은 계열이라 합성 음성에 유리할 수 있습니다.</li>
+      <li>Whisper는 30초 구간 경계에서 글자가 깨지거나 같은 문장을 두 번 받아쓰고, 무음 구간에서 없는 말을 지어내기도 합니다.</li>
+    </ul>
+
+    <h3>참가자용 도구: 상태머신</h3>
+    <p>야구 규칙(4볼 볼넷, 3스트라이크 삼진, 2스트라이크 뒤 파울)은 <code>kbolisten/state_machine.py</code>가 처리합니다. 음성에서 무슨 일이 일어났는지만 알아내 넣으면 B-S-O를 계산해 줍니다. 사용은 자유입니다.</p>
+<pre><code>from kbolisten.state_machine import answer_queries
+
+actions = [(12.5, "strike", {}), (14.3, "ball", {}), (17.4, "in_play", {"outs": 1})]
+pred = answer_queries(actions, query_times=[13.0, 15.0, 18.0])</code></pre>
+  </section>
+
+  <section id="rules">
+    <h2>규칙</h2>
+    <p>질의 시각 <code>t</code>의 답은 <strong>t까지 들린 말만</strong> 근거로 해야 합니다(온라인 방식). 받아쓰기는 클립 전체에 한 번 돌려도 되지만, <code>t</code> 이후에 끝나는 발화의 내용을 답에 쓰면 안 됩니다. 뒤에 나오는 카운트 언급을 미리 들으면 판정 생략이 의미가 없어지기 때문입니다.</p>
+    <div class="rules">
+      <div>
+        <h3>허용</h3>
+        <ul>
+          <li>사전학습 모델(ASR, LLM 등)과 외부 데이터. 제출할 때 무엇을 썼는지 적어 주세요.</li>
+          <li>train의 정답·대본(<code>scripts.jsonl</code>)으로 학습, dev로 튜닝</li>
+          <li>제공된 상태머신을 쓰거나 직접 만드는 것</li>
+        </ul>
+      </div>
+      <div>
+        <h3>금지</h3>
+        <ul>
+          <li>질의 시각 이후의 발화 내용을 답에 쓰는 것</li>
+          <li>test 음성을 사람이 듣고 라벨을 붙이는 것</li>
+          <li>test 데이터로 학습하는 것</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="submit">
+    <h2>참가 방법</h2>
+    <ol class="steps">
+      <li><span><a href="https://huggingface.co/datasets/jhm991231/kbo-listen">Hugging Face</a>에서 데이터셋을 받습니다.</span></li>
+      <li><span>train과 dev로 방법을 만들고, dev에서 평가 코드로 점수를 확인합니다.</span></li>
+      <li><span>test 질의 전체에 대한 예측 파일 <code>pred.json</code>을 만듭니다.</span></li>
+      <li><span>GitHub 저장소에 <a href="https://github.com/jhm991231/kbo-listen/issues/new?title=%5B%EC%A0%9C%EC%B6%9C%5D%20">제출 이슈</a>를 열고 <code>pred.json</code>과 방법 설명(사용한 모델과 외부 데이터, dev 점수)을 첨부합니다. 비공개 정답으로 채점해서 리더보드에 올립니다.</span></li>
+    </ol>
+    <h3>일정</h3>
+    <div class="table-wrap"><table class="data">
+      <tr><td>2026-10-29</td><td>데이터셋, 평가 코드, 베이스라인 공개 · 제출 시작</td></tr>
+      <tr><td>상시</td><td>제출을 받는 대로 채점해 리더보드 갱신</td></tr>
+    </table></div>
+  </section>
+
+  <section id="limits">
+    <h2>한계와 출처</h2>
+    <ul>
+      <li>합성 음성만 있고 실제 중계 음성 평가는 없습니다. 관중 소음도 없습니다.</li>
+      <li>목소리 5개가 모든 split에 나옵니다. 처음 듣는 목소리에 대한 일반화는 측정하지 않습니다.</li>
+      <li>질의 대상은 B-S-O뿐입니다. 점수와 주자는 다루지 않습니다.</li>
+    </ul>
+    <h3>인용</h3>
+<pre><code>@misc{kbolisten2026,
+  title        = {KBO-Listen: 야구 중계를 듣고 볼카운트를 맞히는 음성인식 챌린지},
+  year         = {2026},
+  howpublished = {\url{https://github.com/jhm991231/kbo-listen}},
+  note         = {데이터셋: https://huggingface.co/datasets/jhm991231/kbo-listen}
+}</code></pre>
+    <p class="muted">경기 기록: slothman3878/kbo_playbyplay (CC BY 4.0) · 음성 합성: Qwen3-TTS (Apache 2.0) · 의역: Qwen3-32B (Apache 2.0) · 의역 검증: Gemma 3 27B (검증에만 사용, 출력은 배포하지 않음) · 베이스라인 ASR: Whisper large-v3 (MIT), Qwen3-ASR-1.7B (Apache 2.0)</p>
+  </section>
+
+  </div>
+</div>
+</main>
+
+<footer>
+  <div class="in">
+    <span>KBO-Listen · 아주대학교 Automatic Speech Recognition (2026 가을) 챌린지 과제</span>
+    <span>문의와 제출: <a href="https://github.com/jhm991231/kbo-listen/issues">GitHub 이슈</a></span>
+  </div>
+</footer>
+<script>
+document.querySelectorAll('.table-wrap').forEach(function (w) {
+  function update() { w.classList.toggle('more', w.scrollLeft + w.clientWidth < w.scrollWidth - 2); }
+  w.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  update();
+});
+</script>
+</body>
+</html>

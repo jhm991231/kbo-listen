@@ -26,7 +26,7 @@ The benchmark measures understanding, not transcription. Calls are skipped, desc
 ## Operating Context
 
 - Deliverables due 2026-10-29: homepage, benchmark dataset, baseline code, evaluation code.
-- Dataset on Hugging Face (`jhm991231/kbo-listen`), code on GitHub (`jhm991231/kbo-listen`).
+- Dataset on Hugging Face (`hyeonmin1/kbo-listen`), code on GitHub (`jhm991231/kbo-listen`).
 - Submission: participants open a GitHub issue with `pred.json`; organizer scores against private test labels.
 - Online rule: the answer at time t may use only speech that finished by t.
 

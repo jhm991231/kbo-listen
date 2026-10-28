@@ -4,6 +4,9 @@
 
 > 아주대학교 Automatic Speech Recognition (2026 가을) 챌린지 과제
 
+- 데이터셋: [hyeonmin1/kbo-listen](https://huggingface.co/datasets/hyeonmin1/kbo-listen) (Hugging Face)
+- 홈페이지: https://jhm991231.github.io/kbo-listen/ (Pages 공개 후)
+
 ```
 🎙️ "원아웃, 타석에는 김도영. … 바깥으로 살짝 벗어납니다. … 배트가 허공을 가릅니다."
                                                                  ▶ t = 21.4초  →  1볼 1스트라이크 1아웃

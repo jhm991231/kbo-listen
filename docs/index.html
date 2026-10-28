@@ -179,7 +179,7 @@ footer .in { max-width: 1200px; margin: 0 auto; padding: 28px 24px 48px; font-si
     <p class="lede">반 이닝 분량의 중계 음성과 질의 시각이 주어집니다. 각 시각의 볼·스트라이크·아웃을 답하세요.
       캐스터는 판정을 매번 말하지 않고, 해설위원은 판정 단어로 헷갈리게 합니다. 받아쓰기만으로는 풀리지 않습니다.</p>
     <div class="actions">
-      <a class="btn btn-primary" href="https://huggingface.co/datasets/jhm991231/kbo-listen">데이터셋 받기</a>
+      <a class="btn btn-primary" href="https://huggingface.co/datasets/hyeonmin1/kbo-listen">데이터셋 받기</a>
       <a class="btn btn-secondary" href="https://github.com/jhm991231/kbo-listen">GitHub: 평가 코드와 베이스라인</a>
     </div>
     <ul class="facts">
@@ -357,7 +357,7 @@ pred = answer_queries(actions, query_times=[13.0, 15.0, 18.0])</code></pre>
   <section id="submit">
     <h2>참가 방법</h2>
     <ol class="steps">
-      <li><span><a href="https://huggingface.co/datasets/jhm991231/kbo-listen">Hugging Face</a>에서 데이터셋을 받습니다.</span></li>
+      <li><span><a href="https://huggingface.co/datasets/hyeonmin1/kbo-listen">Hugging Face</a>에서 데이터셋을 받습니다.</span></li>
       <li><span>train과 dev로 방법을 만들고, dev에서 평가 코드로 점수를 확인합니다.</span></li>
       <li><span>test 질의 전체에 대한 예측 파일 <code>pred.json</code>을 만듭니다.</span></li>
       <li><span>GitHub 저장소에 <a href="https://github.com/jhm991231/kbo-listen/issues/new?title=%5B%EC%A0%9C%EC%B6%9C%5D%20">제출 이슈</a>를 열고 <code>pred.json</code>과 방법 설명(사용한 모델과 외부 데이터, dev 점수)을 첨부합니다. 비공개 정답으로 채점해서 리더보드에 올립니다.</span></li>
@@ -381,7 +381,7 @@ pred = answer_queries(actions, query_times=[13.0, 15.0, 18.0])</code></pre>
   title        = {KBO-Listen: 야구 중계를 듣고 볼카운트를 맞히는 음성인식 챌린지},
   year         = {2026},
   howpublished = {\url{https://github.com/jhm991231/kbo-listen}},
-  note         = {데이터셋: https://huggingface.co/datasets/jhm991231/kbo-listen}
+  note         = {데이터셋: https://huggingface.co/datasets/hyeonmin1/kbo-listen}
 }</code></pre>
     <p class="muted">경기 기록: slothman3878/kbo_playbyplay (CC BY 4.0) · 음성 합성: Qwen3-TTS (Apache 2.0) · 의역: Qwen3-32B (Apache 2.0) · 의역 검증: Gemma 3 27B (검증에만 사용, 출력은 배포하지 않음) · 베이스라인 ASR: Whisper large-v3 (MIT), Qwen3-ASR-1.7B (Apache 2.0)</p>
   </section>

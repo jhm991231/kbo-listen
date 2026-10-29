@@ -280,12 +280,17 @@ footer .in { max-width: 1200px; margin: 0 auto; padding: 28px 24px 48px; font-si
   gt.json                 {"clip_id": [{"t": 13.59, "b": 0, "s": 1, "o": 0}, ...]}   test 제외
   scripts.jsonl           발화별 텍스트·화자·시작/끝 시각   train만
   meta.jsonl              트랙, 태그, 시즌, 목소리</code></pre>
+    <h3>받기</h3>
+    <p>평가용 파일(dev·test 질의와 메타, dev 정답, dev 음성 샘플 5클립)은 <a href="https://github.com/jhm991231/kbo-listen/tree/main/dataset">GitHub 저장소의 <code>dataset/</code></a>에 있습니다. 전체 음성(약 6GB)은 <a href="https://huggingface.co/datasets/hyeonmin1/kbo-listen">Hugging Face</a>에 있고, 저장소에서 아래 명령으로 받습니다.</p>
+<pre><code>pip install huggingface_hub
+python -m kbolisten.download --splits dev test</code></pre>
   </section>
 
   <section id="eval">
     <h2>평가</h2>
     <p>주 지표는 <strong>exact</strong>입니다. 질의에서 B, S, O 세 값이 모두 맞은 비율이며, 답이 없는 질의는 오답으로 셉니다. B, S, O 각각의 정확도와 트랙별 점수를 함께 봅니다.</p>
-<pre><code>python -m kbolisten.evaluate --gt dev/gt.json --pred pred.json --meta dev/meta.jsonl</code></pre>
+<pre><code>python -m kbolisten.evaluate --gt dataset/dev/gt.json --pred pred.json --meta dataset/dev/meta.jsonl</code></pre>
+    <p class="muted">코드: <a href="https://github.com/jhm991231/kbo-listen/blob/main/kbolisten/evaluate.py">kbolisten/evaluate.py</a></p>
     <p>예측 파일은 정답 파일과 같은 형식입니다: <code>{"clip_id": [{"t": 13.59, "b": 0, "s": 1, "o": 0}, ...]}</code></p>
   </section>
 
@@ -359,7 +364,7 @@ pred = answer_queries(actions, query_times=[13.0, 15.0, 18.0])</code></pre>
   <section id="submit">
     <h2>참가 방법</h2>
     <ol class="steps">
-      <li><span><a href="https://huggingface.co/datasets/hyeonmin1/kbo-listen">Hugging Face</a>에서 데이터셋을 받습니다.</span></li>
+      <li><span><a href="https://github.com/jhm991231/kbo-listen">GitHub 저장소</a>를 받고, <code>python -m kbolisten.download</code>로 <a href="https://huggingface.co/datasets/hyeonmin1/kbo-listen">Hugging Face</a>의 음성을 받습니다.</span></li>
       <li><span>train과 dev로 방법을 만들고, dev에서 평가 코드로 점수를 확인합니다.</span></li>
       <li><span>test 질의 전체에 대한 예측 파일 <code>pred.json</code>을 만듭니다.</span></li>
       <li><span>GitHub 저장소에 <a href="https://github.com/jhm991231/kbo-listen/issues/new?title=%5B%EC%A0%9C%EC%B6%9C%5D%20">제출 이슈</a>를 열고 <code>pred.json</code>과 방법 설명(사용한 모델과 외부 데이터, dev 점수)을 첨부합니다. 비공개 정답으로 채점해서 리더보드에 올립니다.</span></li>

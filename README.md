@@ -60,7 +60,15 @@
   meta.jsonl               트랙, 태그, 시즌, 목소리 등
 ```
 
-다운로드: *(공개 준비 중)*
+### 받기
+
+평가에 필요한 파일은 저장소의 `dataset/`에 들어 있습니다: dev·test의 질의와 메타, dev 정답, dev 음성 샘플 5클립.
+전체 음성(약 6GB)은 [Hugging Face](https://huggingface.co/datasets/hyeonmin1/kbo-listen)에 있고, 아래 명령으로 `dataset/`에 받습니다.
+
+```bash
+pip install huggingface_hub
+python -m kbolisten.download --splits dev test     # train도 받으려면 --splits train dev test
+```
 
 ### 만든 방법
 
@@ -80,7 +88,7 @@ Hard 트랙에는 사람이 들어도 판정이 애매한 발화가 소수 포�
 보조 지표로 B, S, O 각각의 정확도와 트랙별 점수를 함께 봅니다.
 
 ```bash
-python -m kbolisten.evaluate --gt dev/gt.json --pred my_pred.json --meta dev/meta.jsonl
+python -m kbolisten.evaluate --gt dataset/dev/gt.json --pred my_pred.json --meta dataset/dev/meta.jsonl
 ```
 
 예측 파일은 정답 파일과 같은 형식입니다: `{"clip_id": [{"t": 13.59, "b": 0, "s": 1, "o": 0}, ...]}`
@@ -142,12 +150,14 @@ pred = answer_queries(actions, query_times=[13.0, 15.0, 18.0])
 ## 저장소 구조
 
 ```
+dataset/             평가용 파일 (dev·test 질의·메타, dev 정답, dev 음성 샘플 5클립)
 kbolisten/
   script.py          경기 기록 → 중계 대본 (템플릿, 해설위원, 판정 생략)
   paraphrase.py      LLM 의역 프롬프트·형식 검사·블라인드 검증
   build.py           클립 샘플링, 트랙별 설정, 목소리 배정
   state_machine.py   B-S-O 상태머신 (참가자 제공)
   evaluate.py        평가
+  download.py        Hugging Face에서 음성 받기
   audit.py           의역 사람 점검 페이지·채점
 notebooks/           01 ~ 08
 voices/              참조 음성 5개 (캐스터 3, 해설위원 2, 가상 목소리)와 voices.json

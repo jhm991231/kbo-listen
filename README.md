@@ -108,7 +108,8 @@ python -m kbolisten.evaluate --gt dataset/dev/gt.json --pred my_pred.json --meta
 dev + test 300클립, 질의 4,687개 기준. 코드는 `notebooks/08_baseline_rules.ipynb`.
 
 - Qwen3-ASR은 데이터 합성에 쓴 Qwen3-TTS와 같은 계열이라 합성 음성에 유리할 수 있습니다.
-- Whisper는 30초 구간 경계에서 글자가 깨지거나 같은 문장을 두 번 받아쓰고, 무음 구간에서 없는 말을 지어내는 경우가 있습니다.
+- Hard에서 처음 틀리는 지점을 대본으로 분류하면 판정 단어가 없는 묘사("뒤쪽으로 걷어냅니다") 45%, 판정 생략 21%, 방해 해설 20%입니다 (Qwen3-ASR).
+- Whisper는 같은 구절을 두 번 받아쓰거나(23클립), 무음 구간에서 '자막 제공 및 광고' 같은 없는 말을 지어냅니다(62클립). Qwen3-ASR에서는 거의 없었습니다 (dev + test 300클립 기준).
 
 ### 참가자용 도구: 상태머신
 

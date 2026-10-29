@@ -161,9 +161,9 @@ a { color: #000; }
   <p class="note">dev + test 300클립, 질의 4,687개. 코드: <a href="https://github.com/jhm991231/kbo-listen/blob/main/notebooks/08_baseline_rules.ipynb">08_baseline_rules.ipynb</a></p>
   <ul>
     <li>키워드 규칙은 일부러 단순하게. "카운트 투앤원", "원아웃, 타석에는…" 언급으로 상태를 바로잡음.</li>
-    <li>Hard 오답 대부분: 판정 단어 없는 묘사("뒤쪽으로 걷어냅니다")와 판정 생략.</li>
+    <li>Hard 첫 오답 원인: 판정 단어 없는 묘사 45%, 판정 생략 21%, 방해 해설 20% (Qwen3-ASR).</li>
     <li>Qwen3-ASR은 합성에 쓴 Qwen3-TTS와 같은 계열이라 합성 음성에 유리할 수 있음.</li>
-    <li>Whisper는 30초 구간 경계에서 글자 깨짐·문장 중복, 무음 구간에서 없는 말을 지어냄.</li>
+    <li>Whisper는 같은 구절 중복(23클립), 무음 구간에서 없는 말을 지어냄(62클립). Qwen3-ASR은 거의 없음.</li>
   </ul>
   <div class="ph">[예시 자리: 베이스라인이 틀린 사례 2~3개 (들은 말 / 뽑은 판정 / 정답)]</div>
   <h3>참가자용 도구: 상태머신</h3>

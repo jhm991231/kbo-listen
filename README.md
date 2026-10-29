@@ -154,6 +154,9 @@ voices/              참조 음성 (가상 목소리)
 
 ## 라이선스와 출처
 
+- 이 저장소의 코드: [MIT](LICENSE)
+- 데이터셋 (음성, 질의, 정답, 대본): CC BY 4.0
+
 - 경기 기록: [slothman3878/kbo_playbyplay](https://huggingface.co/datasets/slothman3878/kbo_playbyplay) (CC BY 4.0)
 - 음성 합성: [Qwen3-TTS](https://huggingface.co/Qwen) 1.7B (Apache 2.0)
 - 의역: Qwen3-32B (Apache 2.0) / 검증: Gemma 3 27B ([Gemma Terms of Use](https://ai.google.dev/gemma/terms), 검증용으로만 사용, 출력은 배포하지 않음)

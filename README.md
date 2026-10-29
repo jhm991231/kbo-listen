@@ -95,6 +95,7 @@ python -m kbolisten.evaluate --gt dev/gt.json --pred my_pred.json --meta dev/met
 |---|---|---|---|---|
 | Whisper large-v3 | 12.5% | 71.3% | 81.4% | 61.7% |
 | Qwen3-ASR-1.7B + ForcedAligner | 3.8% | **75.0%** | **85.3%** | **65.1%** |
+| (찍기 기준선: 모든 질의에 0-0-0) | - | 2.7% | 2.7% | 2.7% |
 
 dev + test 300클립, 질의 4,687개 기준. 코드는 `notebooks/08_baseline_rules.ipynb`.
 

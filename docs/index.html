@@ -296,11 +296,13 @@ footer .in { max-width: 1200px; margin: 0 auto; padding: 28px 24px 48px; font-si
       <tr><th>방법</th><th class="n">exact</th><th class="n">Easy</th><th class="n">Hard</th><th class="n">B</th><th class="n">S</th><th class="n">O</th><th class="n">날짜</th></tr>
       <tr><td>Qwen3-ASR + 키워드 규칙<span class="sub">베이스라인</span></td><td class="n best">73.7</td><td class="n">83.4</td><td class="n">64.8</td><td class="n">84.6</td><td class="n">87.5</td><td class="n">92.6</td><td class="n">2026-10-29</td></tr>
       <tr><td>Whisper large-v3 + 키워드 규칙<span class="sub">베이스라인</span></td><td class="n">70.0</td><td class="n">79.7</td><td class="n">61.0</td><td class="n">82.7</td><td class="n">86.6</td><td class="n">89.4</td><td class="n">2026-10-29</td></tr>
+      <tr><td>모든 질의에 0볼 0스트라이크 0아웃<span class="sub">찍기 기준선</span></td><td class="n">2.7</td><td class="n">2.6</td><td class="n">2.8</td><td class="n">45.7</td><td class="n">42.2</td><td class="n">26.8</td><td class="n">2026-10-29</td></tr>
     </table></div>
     <dl class="def legend">
       <dt>exact</dt><dd>질의에서 B, S, O 세 값이 모두 맞은 비율. 순위는 이 값으로 매깁니다.</dd>
       <dt>Easy · Hard</dt><dd>트랙별 exact. Hard는 판정 생략, 방해 해설, 의역이 들어간 클립입니다.</dd>
       <dt>B · S · O</dt><dd>볼, 스트라이크, 아웃 각각의 정확도</dd>
+      <dt>찍기 기준선</dt><dd>음성을 듣지 않고 늘 같은 답을 낼 때의 점수. 이보다 낮으면 듣지 않은 것과 같습니다.</dd>
     </dl>
     <p class="muted">아직 참가자 제출이 없습니다. 제출하면 채점해서 이 표에 추가합니다.</p>
   </section>

@@ -149,7 +149,7 @@ kbolisten/
   evaluate.py        평가
   audit.py           의역 사람 점검 페이지·채점
 notebooks/           01 ~ 08
-voices/              참조 음성 (가상 목소리)
+voices/              참조 음성 5개 (캐스터 3, 해설위원 2, 가상 목소리)와 voices.json
 ```
 
 ## 라이선스와 출처

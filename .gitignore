@@ -14,3 +14,7 @@ notebooks/audit/
 
 # 디자인 스킬 작업 파일 (스크린샷, 검사 결과)
 .impeccable/
+
+# kbolisten.download로 받은 음성과 캐시 (저장소에는 dev 샘플 5클립만 둔다)
+dataset/**/*.wav
+dataset/.cache/

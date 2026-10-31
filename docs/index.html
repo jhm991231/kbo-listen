@@ -67,6 +67,9 @@ h1 { font-size: clamp(30px, 3.4vw, 42px); line-height: 1.22; letter-spacing: -.0
 .example tr.q td { background: var(--blue-wash); border-bottom-color: #d6e3f6; }
 .example tr.q .ans { font-weight: 650; color: var(--blue-ink); }
 .example tr.q .t, .example tr.q .who { color: var(--ink-2); }
+.example.script { margin: 18px 0 22px; }
+.example .kind { width: 1%; white-space: nowrap; text-align: right; font-size: 12.5px; color: var(--ink-3); padding-top: 11px; }
+.example tr.gap td { color: var(--ink-3); font-style: italic; background: var(--panel); }
 .example .note { font-size: 12.5px; color: var(--ink-3); padding: 10px 16px; border-top: 1px solid var(--rule); }
 
 /* document */
@@ -151,6 +154,8 @@ footer .in { max-width: 1200px; margin: 0 auto; padding: 28px 24px 48px; font-si
   dl.def { grid-template-columns: 1fr; gap: 2px; }
   dl.def dd { margin-bottom: 10px; }
   .example .who { display: none; }
+  .example .kind { width: 66px; white-space: normal; overflow-wrap: normal; text-align: left; font-size: 12px; padding-left: 4px; }
+  .example.script td { padding-left: 10px; padding-right: 10px; }
   .example-head { flex-direction: column; gap: 2px; }
   table.data { font-size: 14px; }
   h2 { font-size: 23px; }
@@ -248,17 +253,77 @@ footer .in { max-width: 1200px; margin: 0 auto; padding: 28px 24px 48px; font-si
   <section id="pipeline">
     <h2>파이프라인</h2>
     <ol class="pipeline" aria-label="데이터 생성 순서">
-      <li>KBO 투구 기록</li><li>B-S-O 정답</li><li>중계 대본</li><li>LLM 의역 (Hard)</li><li>TTS 합성</li><li>질의 시각</li>
+      <li>KBO 투구 기록</li><li>이벤트·정답</li><li>대사 템플릿</li><li>대본 (Easy · Hard)</li><li>LLM 의역 (Hard)</li><li>TTS 합성</li><li>질의 배치</li>
     </ol>
-    <p>실제 중계 음성은 저작권 때문에 배포할 수 없어서, 실제 경기 기록을 바탕으로 중계를 합성했습니다.</p>
-    <ol>
-      <li><strong>정답</strong>: KBO 투구 단위 기록(<a href="https://huggingface.co/datasets/slothman3878/kbo_playbyplay">slothman3878/kbo_playbyplay</a>, CC BY 4.0)으로 투구마다 B-S-O를 계산</li>
-      <li><strong>대본</strong>: 실제 중계 말투를 참고한 템플릿으로 캐스터·해설위원 대본 생성</li>
-      <li><strong>의역 (Hard)</strong>: Qwen3-32B가 다시 쓰고, Gemma 3 27B가 원문을 모른 채 판정을 분류해 원래 판정과 같을 때만 채택</li>
-      <li><strong>음성</strong>: Qwen3-TTS로 설계한 가상의 캐스터 3명, 해설위원 2명 목소리로 합성. 실존 인물의 목소리는 쓰지 않았습니다.</li>
-    </ol>
-    <p>의역 품질은 사람이 직접 확인했습니다. 원문과 정답을 모른 채 의역 100문장을 판정했을 때 판정 문장의 <strong>97.3%</strong>(73/75)가 원래 판정과 일치했고, 13%는 표현이 어색했습니다.</p>
+    <p>실제 중계 음성은 방송사 저작물이라 배포할 수 없습니다. 그래서 실제 경기 기록으로 중계를 합성했습니다. 합성하면 정답, 발화 시각, 판정을 생략했는지까지 처음부터 정확히 알 수 있습니다.</p>
 
+    <h3>1. 경기 기록에서 이벤트와 정답</h3>
+    <p>KBO 2023~2026 정규시즌 투구 단위 기록(<a href="https://huggingface.co/datasets/slothman3878/kbo_playbyplay">slothman3878/kbo_playbyplay</a>, CC BY 4.0)을 반 이닝씩 자르고, 투구·타석 결과·투구 없는 이벤트(피치클락 위반, 고의4구, 주루사 등)로 나눕니다. 투구마다 B-S-O를 계산했고, 기록을 다시 재생한 결과와 대조해 불일치가 0건임을 확인했습니다. 정답은 사람이 단 라벨이 아니라 실제 경기 기록입니다.</p>
+
+    <h3>2. 이벤트별 대사 템플릿</h3>
+    <p>이벤트마다 캐스터 대사 후보를 여러 개 두고 무작위로 고릅니다. 기본 템플릿을 만든 뒤, 실제 중계 3경기의 자막을 분석해 자주 쓰는 표현과 말버릇을 보강했습니다. 자막 원문은 배포하지 않습니다.</p>
+    <dl class="def">
+      <dt>도입</dt><dd>이닝과 공격 팀, 스코어, 투수와 타자 소개 <q>노아웃, 타석에는 이우성.</q></dd>
+      <dt>판정</dt><dd>투구마다 한 번. 볼 10가지, 스트라이크 6가지, 헛스윙 5가지, 파울 7가지 표현에 <q>초구</q>, 구종과 구속, <q>자,</q>를 확률로 붙입니다.</dd>
+      <dt>카운트 재언급</dt><dd>판정 뒤 30%. 실제 중계에서 가장 많이 쓰는 <q>투앤원</q> 형식 위주</dd>
+      <dt>타석 종료</dt><dd>삼진, 안타, 아웃, 병살, 볼넷, 몸에 맞는 공 등 결과별 표현</dd>
+      <dt>해설위원</dt><dd>맞장구와 결과에 맞는 코멘트. 실제 중계처럼 타석이 끝나면 대부분 한마디 합니다.</dd>
+    </dl>
+    <p class="muted">정답이 흐려지지 않도록 카운트 숫자는 재언급에서만 말하고, 해설위원의 일반 코멘트에는 판정 단어를 쓰지 않습니다. 클립 ID로 난수 시드를 고정해서 같은 클립은 항상 같은 대본이 나옵니다.</p>
+
+    <h3>3. 대본: Easy와 Hard</h3>
+    <p>같은 템플릿에서 설정만 바꿔 두 트랙을 만듭니다. Easy는 템플릿 문장 그대로입니다. Hard는 대본 단계에서 어려움을 넣은 뒤, 판정과 해설 문장을 LLM으로 다시 씁니다.</p>
+    <div class="table-wrap"><table class="data">
+      <tr><th></th><th>Easy</th><th>Hard</th></tr>
+      <tr><td>판정 생략</td><td>없음</td><td>생략 가능한 투구의 50% <span class="sub">같은 타석에서 뒤에 카운트 언급이 있는 투구만</span></td></tr>
+      <tr><td>해설위원</td><td>맞장구, 결과에 맞는 코멘트</td><td>더 자주 (일반 투구 뒤 15% → 35%), 그중 절반은 판정 단어가 들어간 방해 코멘트</td></tr>
+      <tr><td>드문 이벤트</td><td>없음</td><td>절반의 클립 <span class="sub">피치클락 위반, 투구 없는 볼넷, 주루사</span></td></tr>
+      <tr><td>문장</td><td>템플릿 그대로</td><td>LLM 의역 <span class="sub">판정 단어 없는 묘사가 많음</span></td></tr>
+    </table></div>
+
+    <figure class="example script">
+      <div class="example-head"><strong>Easy 대본</strong><span>train 20240821LTHT02024_08B</span></div>
+      <table>
+        <tr><td class="t">8.0초</td><td class="who">캐스터</td><td>노아웃, 타석에는 이우성.</td><td class="kind"></td></tr>
+        <tr><td class="t">10.5초</td><td class="who">캐스터</td><td>슬라이더, 먹혔고 파울입니다.</td><td class="kind">판정</td></tr>
+        <tr class="q"><td class="t">13.4초</td><td class="who">질의</td><td class="ans">0볼 1스트라이크 0아웃</td><td class="kind"></td></tr>
+        <tr><td class="t">13.5초</td><td class="who">캐스터</td><td>투심, 왼쪽 파울입니다.</td><td class="kind">판정</td></tr>
+        <tr><td class="t">15.8초</td><td class="who">캐스터</td><td>노볼 투 스트라이크입니다.</td><td class="kind">재언급</td></tr>
+        <tr class="q"><td class="t">17.7초</td><td class="who">질의</td><td class="ans">0볼 2스트라이크 0아웃</td><td class="kind"></td></tr>
+        <tr><td class="t">17.8초</td><td class="who">캐스터</td><td>3구, 낮은 공 골라냅니다.</td><td class="kind">판정</td></tr>
+        <tr><td class="t">20.4초</td><td class="who">캐스터</td><td>볼카운트 원볼 투 스트라이크.</td><td class="kind">재언급</td></tr>
+        <tr class="q"><td class="t">23.0초</td><td class="who">질의</td><td class="ans">1볼 2스트라이크 0아웃</td><td class="kind"></td></tr>
+      </table>
+    </figure>
+
+    <figure class="example script">
+      <div class="example-head"><strong>Hard 대본</strong><span>train 20230809NCSK02023_01T</span></div>
+      <table>
+        <tr><td class="t">7.8초</td><td class="who">캐스터</td><td>노아웃, 타석에는 손아섭.</td><td class="kind"></td></tr>
+        <tr class="gap"><td class="t"></td><td class="who"></td><td>초구~3구 판정 없음</td><td class="kind">생략</td></tr>
+        <tr><td class="t">10.6초</td><td class="who">캐스터</td><td>볼카운트 쓰리볼.</td><td class="kind">재언급</td></tr>
+        <tr class="q"><td class="t">12.5초</td><td class="who">질의</td><td class="ans">3볼 0스트라이크 0아웃</td><td class="kind"></td></tr>
+        <tr><td class="t">12.6초</td><td class="who">해설</td><td>풀카운트가 되면 투수 입장에서는 부담이 커지죠.</td><td class="kind">방해 해설</td></tr>
+        <tr><td class="t">16.6초</td><td class="who">캐스터</td><td>바깥쪽으로 정확하게 들어옵니다.</td><td class="kind">묘사 = 스트라이크</td></tr>
+        <tr class="q"><td class="t">18.7초</td><td class="who">질의</td><td class="ans">3볼 1스트라이크 0아웃</td><td class="kind"></td></tr>
+        <tr><td class="t">18.8초</td><td class="who">해설</td><td>투수 입장에서는 풀카운트를 피하고 싶어하죠.</td><td class="kind">방해 해설</td></tr>
+        <tr class="gap"><td class="t"></td><td class="who"></td><td>5구 판정 없음</td><td class="kind">생략</td></tr>
+        <tr><td class="t">22.4초</td><td class="who">캐스터</td><td>풀카운트.</td><td class="kind">재언급</td></tr>
+        <tr class="q"><td class="t">23.7초</td><td class="who">질의</td><td class="ans">3볼 2스트라이크 0아웃</td><td class="kind"></td></tr>
+      </table>
+      <figcaption class="note">판정이 생략된 초구~3구에는 질의가 없습니다. 뒤의 <q>쓰리볼</q>을 들은 다음부터 질의합니다.</figcaption>
+    </figure>
+
+    <h3>4. 의역과 검증 (Hard)</h3>
+    <p>Qwen3-32B가 판정과 해설 문장을 문맥에 맞게 다시 씁니다. 도입, 카운트 재언급, 이닝 종료는 템플릿 그대로 둬서 상태 정보는 바뀌지 않습니다. 의역은 세 번 거릅니다.</p>
+    <ol>
+      <li><strong>형식 검사</strong>: 없던 숫자·구종·판정이 생기거나 서로 다른 판정이 섞인 문장은 버립니다.</li>
+      <li><strong>블라인드 판정</strong>: 계열이 다른 Gemma 3 27B가 원문을 모른 채 판정을 분류하고, 원래 판정과 같을 때만 채택합니다. 떨어지면 템플릿 원문을 씁니다. 대상 13,664문장 중 12,254문장(90%)이 채택됐습니다.</li>
+      <li><strong>사람 감수</strong>: 원문과 정답을 모른 채 의역 100문장을 판정했을 때 판정 문장의 <strong>97.3%</strong>(73/75)가 원래 판정과 일치했고, 13%는 표현이 어색했습니다.</li>
+    </ol>
+
+    <h3>5. 음성 합성과 질의 배치</h3>
+    <p>Qwen3-TTS로 설계한 가상의 캐스터 3명, 해설위원 2명 목소리로 합성합니다. 실존 인물의 목소리는 쓰지 않았습니다. 합성하면서 나온 발화 시각을 이용해, 판정이 전해진 직후·다음 말이 시작되기 전에 질의를 놓습니다.</p>
   </section>
 
   <section id="baseline">
@@ -297,14 +362,7 @@ pred = answer_queries(actions, query_times=[13.0, 15.0, 18.0])</code></pre>
     </table></div>
     <p class="muted">경기 단위로 split을 나눠 같은 경기가 두 split에 걸치지 않습니다. 음성은 24kHz mono WAV입니다.</p>
 
-    <h3>트랙</h3>
-    <div class="table-wrap"><table class="data">
-      <tr><th></th><th>Easy</th><th>Hard</th></tr>
-      <tr><td>판정 생략</td><td>없음</td><td>생략 가능한 투구의 50% <span class="sub">같은 타석에서 뒤에 카운트 언급이 있는 투구만</span></td></tr>
-      <tr><td>해설위원</td><td>맞장구, 결과에 맞는 코멘트</td><td>더 자주, 그리고 판정 단어가 들어간 일반론</td></tr>
-      <tr><td>대본</td><td>템플릿</td><td>LLM 의역 <span class="sub">판정 단어 없는 묘사가 많음</span></td></tr>
-      <tr><td>드문 이벤트</td><td>없음</td><td>절반의 클립 <span class="sub">피치클락 위반, 투구 없는 볼넷, 주루사</span></td></tr>
-    </table></div>
+    <p>각 split은 Easy와 Hard가 반씩입니다. 두 트랙의 차이는 <a href="#pipeline">파이프라인</a> 3단계에 있습니다.</p>
 
     <h3>파일 형식</h3>
 <pre><code>{split}/
